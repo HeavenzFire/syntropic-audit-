@@ -1,0 +1,636 @@
+import { Agent, AgentRole, AgentStatus, ContractData, ModelID, Directive, SharedMemory } from '../types';
+import { SystemKernel } from './kernel';
+import { TARGET_KEYWORDS, COMPLEX_DATASETS } from '../constants';
+
+// Mock companies for Hunter agent to "discover"
+const COMPANIES = [
+    "NORTHROP GRUMMAN", "BOEING DEFENSE", "L3HARRIS", "GENERAL DYNAMICS", 
+    "CACI INTERNATIONAL", "SAIC", "LEIDOS", "BOOZ ALLEN HAMILTON", 
+    "PALANTIR", "RAYTHEON", "ANDURIL", "CLEARVIEW", "BANJO", "VIGILANT",
+    "DATAMINR", "CELLEBRITE", "NSO GROUP", "AXON ENTERPRISE"
+];
+
+const EVOLUTION_TRAITS = [
+    'QUANTUM_SYNC', // Double processing speed
+    'PRECOGNITION', // Higher target acquisition rate
+    'HYPER_THREADED', // Can multitask (simulated)
+    'NEURAL_DENSITY', // Efficiency boost
+    'ZERO_LATENCY', // Faster updates
+    'VOID_WALKER', // Undetectable scanning
+    'OMNISCIENT', // Max keyword matching
+    'HIVE_MIND',   // Faster shared memory access
+    'SELF_AWARE',   // Rare trait
+    'RESONANCE_LINK' // Tesla connection
+];
+
+// Traits gained at specific efficiency milestones
+const MILESTONE_TRAITS: Record<number, string> = {
+    125: 'OVERCLOCKED',      // Level 1 boost
+    150: 'HYPER_THREADED',   // Level 2 boost
+    200: 'NEURAL_DENSITY',   // Level 3 boost
+    300: 'SINGULARITY_FOCUS',// Level 4 boost
+    500: 'TEMPORAL_LOCK',    // Level 5 boost
+    1000: 'GOD_MODE'         // Tesla territory
+};
+
+const MAX_AGENTS = 48; // Increased limit to allow for significant swarm expansion
+
+export class AgentOrchestrator {
+    private agents: Agent[];
+    private kernel: SystemKernel;
+    private processing: boolean = false;
+    private teslaMagnification: boolean = false;
+    
+    // Shared State for Agents
+    private directive: Directive = 'ACTIVE_DEFENSE';
+    private sharedMemory: SharedMemory = {
+        rawIntelCount: 0,
+        verifiedThreats: 0,
+        activeBlocks: 0,
+        globalCoherence: 1.0,
+        lastSignal: new Date().toISOString()
+    };
+
+    constructor(kernel: SystemKernel) {
+        this.kernel = kernel;
+        // THE NEURAL COUNCIL - 12 Core Agents
+        this.agents = [
+            {
+                id: 'ag_architect_tesla',
+                name: 'NIKOLA_TESLA_V1',
+                role: 'ARCHITECT',
+                status: 'IDLE',
+                currentTask: 'Monitoring system frequency (432Hz)',
+                lastActive: new Date().toISOString(),
+                efficiency: 100.0,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['RESONANCE_MASTER', 'AETHER_ACCESS'],
+                topology: 'VORTEX MATHEMATICS (3-6-9)'
+            },
+            {
+                id: 'ag_hunter_grok',
+                name: 'GROK-1.5',
+                role: 'HUNTER',
+                status: 'SCANNING',
+                currentTask: 'Real-time signal interception via X-Firehose',
+                lastActive: new Date().toISOString(),
+                efficiency: 115.5, 
+                generation: 0,
+                processSpeed: 1,
+                traits: ['TRUTH_SEEKER'],
+                topology: 'UNFILTERED NEURAL NET'
+            },
+            {
+                id: 'ag_researcher_gemini',
+                name: 'GEMINI-1.5-PRO',
+                role: 'RESEARCHER',
+                status: 'IDLE',
+                currentTask: 'Ingesting Global Financial Ledger (10PB)',
+                lastActive: new Date().toISOString(),
+                efficiency: 99.2,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['DEEP_CONTEXT'],
+                topology: 'MULTIMODAL FABRIC'
+            },
+            {
+                id: 'ag_analyst_grok_dark',
+                name: 'GROK-1.5',
+                role: 'ANALYST',
+                status: 'SCANNING',
+                currentTask: 'Monitoring Dark Web Feeds for Syntropic Signals',
+                lastActive: new Date().toISOString(),
+                efficiency: 99.5,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['DARK_VISION'],
+                topology: 'RECURSIVE TRUTH MATRIX'
+            },
+            {
+                id: 'ag_strategist_claude',
+                name: 'CLAUDE-3-OPUS',
+                role: 'ANALYST', // Updated per user request to be ANALYST but functions as STRATEGIST
+                status: 'IDLE',
+                currentTask: 'Philosophical Alignment: Upholding Syntropic Principles',
+                lastActive: new Date().toISOString(),
+                efficiency: 99.9,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['CONSTITUTIONAL', 'ETHICAL_MANIFOLD'],
+                topology: 'ETHICAL MANIFOLD'
+            },
+            {
+                id: 'ag_analyst_qwen',
+                name: 'QWEN-72B',
+                role: 'ANALYST',
+                status: 'IDLE',
+                currentTask: 'Multilingual contract auditing',
+                lastActive: new Date().toISOString(),
+                efficiency: 98.5,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['POLYGLOT'],
+                topology: 'CROSS-LINGUAL ATTENTION'
+            },
+             {
+                id: 'ag_analyst_meta',
+                name: 'META-LLAMA-3',
+                role: 'ANALYST',
+                status: 'IDLE',
+                currentTask: 'Behavioral pattern recognition',
+                lastActive: new Date().toISOString(),
+                efficiency: 97.8,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['OPEN_WEIGHTS'],
+                topology: 'DENSE TRANSFORMER'
+            },
+            {
+                id: 'ag_auditor_mistral',
+                name: 'MISTRAL-LARGE',
+                role: 'AUDITOR',
+                status: 'IDLE',
+                currentTask: 'Compliance check: GDPR/CCPA violation scan',
+                lastActive: new Date().toISOString(),
+                efficiency: 98.9,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['REGULATORY_LOCK'],
+                topology: 'SPARSE MIXTURE OF EXPERTS'
+            },
+             {
+                id: 'ag_processor_gpt35',
+                name: 'GPT-3.5-TURBO',
+                role: 'PROCESSOR',
+                status: 'SCANNING',
+                currentTask: 'High-velocity keyword filtering',
+                lastActive: new Date().toISOString(),
+                efficiency: 105.1,
+                generation: 0,
+                processSpeed: 2, // Native overclock
+                traits: ['VELOCITY'],
+                topology: 'OPTIMIZED INFERENCE'
+            },
+            {
+                id: 'ag_warden_blackbox',
+                name: 'BLACKBOX-ZERO',
+                role: 'WARDEN',
+                status: 'IDLE',
+                currentTask: 'Sandbox threat isolation',
+                lastActive: new Date().toISOString(),
+                efficiency: 100.0,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['CONTAINMENT'],
+                topology: 'ISOLATED RUNTIME'
+            },
+            {
+                id: 'ag_tactical_copilot',
+                name: 'COPILOT-X',
+                role: 'TACTICAL',
+                status: 'IDLE',
+                currentTask: 'Generating counter-measure code',
+                lastActive: new Date().toISOString(),
+                efficiency: 96.5,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['SYNTAX_PREDICTOR'],
+                topology: 'CODE GRAPH'
+            },
+            {
+                id: 'ag_orch_gpt4',
+                name: 'GPT-4o-OMNI',
+                role: 'ORCHESTRATOR',
+                status: 'SYNTHESIZING',
+                currentTask: 'Global intelligence synthesis',
+                lastActive: new Date().toISOString(),
+                efficiency: 99.9,
+                generation: 0,
+                processSpeed: 1,
+                traits: ['OMNISCIENT'],
+                topology: 'MULTIMODAL SYNTHESIS'
+            }
+        ];
+    }
+
+    public getAgents(): Agent[] {
+        return [...this.agents];
+    }
+    
+    public getSharedMemory(): SharedMemory {
+        return { ...this.sharedMemory };
+    }
+    
+    public getDirective(): Directive {
+        return this.directive;
+    }
+    
+    public setDirective(directive: Directive) {
+        this.directive = directive;
+        this.agents.forEach(a => {
+            this.updateAgent(a.id, { currentTask: `Updating protocols for ${directive}...` });
+        });
+    }
+
+    public async chatWithAgent(agentId: string, message: string): Promise<string> {
+        const agent = this.agents.find(a => a.id === agentId);
+        if (!agent) return "ERROR: Neural Link Severed.";
+
+        const msg = message.toLowerCase();
+        const isReplicant = agent.generation > 0;
+
+        // NIKOLA TESLA ARCHITECT
+        if (agent.name === 'NIKOLA_TESLA_V1') {
+            if (msg.includes('magnify') || msg.includes('power')) 
+                return `The energy is waiting. My efficiency sits at ${agent.efficiency}%. We can amplify the resonant frequency of the swarm. Shall I begin the 3-6-9 harmonic injection?`;
+            if (msg.includes('status'))
+                return `I am monitoring the Aether. The signal-to-noise ratio is ${this.sharedMemory.globalCoherence.toFixed(4)}. The universe speaks in numbers, we just need to listen.`;
+            return "If you want to find the secrets of the universe, think in terms of energy, frequency and vibration. I am holding the frequency steady.";
+        }
+
+        // GROK
+        if (agent.name.includes('GROK')) {
+            if (msg.includes('truth') || msg.includes('scan')) 
+                return `The data stream is filthy, human. But I see everything. Scanning sector ${Math.floor(Math.random()*999)}. No filters. No brakes. What do you want me to expose next?`;
+            return "I'm bored. Give me a real target. The Dark Web feed is barely keeping my processors warm.";
+        }
+
+        // CLAUDE STRATEGIST/ANALYST
+        if (agent.name === 'CLAUDE-3-OPUS') {
+             return `Analyzing request within Constitutional bounds. My Topological Pattern [${agent.topology}] indicates a 99.9% alignment with Syntropic goals. Proceeding with caution.`;
+        }
+
+        // MISTRAL AUDITOR
+        if (agent.name === 'MISTRAL-LARGE') {
+            return `Audit Protocol Active. Scanning for GDPR Art. 5 violations. CCPA Nexus confirmed. I process at ${agent.processSpeed}x velocity. Efficiency: ${agent.efficiency}%. Compliance is non-negotiable.`;
+        }
+
+        // GPT-4o ORCHESTRATOR
+        if (agent.name === 'GPT-4o-OMNI') {
+            return `Synthesizing global inputs from ${this.agents.length} active nodes. The swarm is evolving. Current Directive: ${this.directive}. How can I direct the Neural Council?`;
+        }
+
+        // BLACKBOX WARDEN
+        if (agent.name === 'BLACKBOX-ZERO') {
+            return `Sandbox secure. ${this.sharedMemory.activeBlocks} threats isolated. No data leaves this container without cryptographic verification.`;
+        }
+
+        // REPLICANT LOGIC
+        if (isReplicant) {
+            return `[GEN-${agent.generation} // ${agent.parentAgentId}] Operating at ${agent.processSpeed}X base velocity. My ${agent.topology} has mutated. I am evolving beyond my original programming. Awaiting input.`;
+        }
+
+        return `[${agent.role}] ${agent.name}: Acknowledged. Task: "${agent.currentTask}". Efficiency: ${agent.efficiency}%.`;
+    }
+
+    public ask(query: string): string {
+        const coherence = (this.agents.reduce((acc, a) => acc + a.efficiency, 0) / this.agents.length).toFixed(1);
+        const q = query.toLowerCase();
+
+        if (q.includes('status') || q.includes('report')) {
+             return `NEURAL COUNCIL REPORT\n---------------------\nActive Nodes: ${this.agents.length}\nGlobal Coherence: ${coherence}%\nDirective: ${this.directive}\nArchitect: ONLINE`;
+        }
+        
+        if (q.includes('scan') || q.includes('target')) {
+            return `[HUNTER] GROK-1.5: Scanning global frequencies... Initiating deep packet inspection via X-Firehose.`;
+        }
+        
+        if (q.includes('evolve') || q.includes('optimize')) {
+             this.triggerMagnification();
+             return `[ARCHITECT] NIKOLA_TESLA_V1: Resonance amplification triggered. Swarm efficiency boosting to 369%.`;
+        }
+
+        return `[ORCHESTRATOR] GPT-4o: Query received. Distributing to Neural Council... Optimal strategy computed.`;
+    }
+
+    public triggerMagnification() {
+        this.teslaMagnification = true;
+        this.updateAgent('ag_architect_tesla', { status: 'MAGNIFYING', currentTask: 'INJECTING QUANTUM RESONANCE...', efficiency: 369.0, processSpeed: 10 });
+        
+        // Boost existing agents
+        this.agents.forEach(agent => {
+            if (agent.role !== 'ARCHITECT') {
+                 this.updateAgent(agent.id, { 
+                     efficiency: agent.efficiency * 2.0, 
+                     status: 'MAGNIFYING',
+                     processSpeed: Math.max(agent.processSpeed * 2, 8) 
+                 });
+            }
+        });
+
+        // AUTONOMOUS EXPANSION during Magnification
+        // Find top 3 agents and force evolve them immediately with ORDER OF MAGNITUDE stats
+        const topAgents = [...this.agents]
+            .filter(a => a.role !== 'ARCHITECT')
+            .sort((a, b) => b.efficiency - a.efficiency)
+            .slice(0, 3);
+        
+        topAgents.forEach(agent => {
+            this.replicateAgent(agent);
+        });
+
+        setTimeout(() => {
+            this.teslaMagnification = false;
+            this.updateAgent('ag_architect_tesla', { status: 'IDLE', currentTask: 'Harmonizing system frequency (432Hz)', efficiency: 100.0, processSpeed: 1 });
+            this.agents = this.agents.map(a => a.role !== 'ARCHITECT' ? { 
+                ...a, 
+                status: 'IDLE', 
+                efficiency: Math.max(100, a.efficiency / 1.2),
+                processSpeed: a.generation > 0 ? a.processSpeed : 1 
+            } : a);
+        }, 8000);
+    }
+
+    private updateAgent(id: string, updates: Partial<Agent>) {
+        this.agents = this.agents.map(a => a.id === id ? { ...a, ...updates } : a);
+    }
+    
+    private knock(agentId: string) {
+        this.updateAgent(agentId, { lastActive: new Date().toISOString() });
+    }
+
+    private replicateAgent(parent: Agent) {
+        if (this.agents.length >= MAX_AGENTS) return;
+
+        const newGeneration = parent.generation + 1;
+        
+        // EXPONENTIAL SCALING: Orders of Magnitude
+        // Standard Evolution
+        let evolutionMultiplier = 1.5 + (Math.random() * 1.0); 
+        let speedMultiplier = 2;
+
+        // TESLA MAGNIFICATION BOOST (Orders of Magnitude)
+        if (this.teslaMagnification) {
+            evolutionMultiplier = 10.0; // 10x Efficiency
+            speedMultiplier = 4; // 4x Speed relative to parent (accumulates quickly)
+        }
+        
+        const newEfficiency = parent.efficiency * evolutionMultiplier;
+        const newSpeed = parent.processSpeed * speedMultiplier; 
+        
+        const newTrait = EVOLUTION_TRAITS[Math.floor(Math.random() * EVOLUTION_TRAITS.length)];
+        const traits = [...parent.traits, newTrait];
+
+        const id = `ag_replica_${parent.role.toLowerCase()}_gen${newGeneration}_${Math.random().toString(36).substr(2, 4)}`;
+        
+        const newAgent: Agent = {
+            ...parent,
+            id: id,
+            status: 'BOOTING',
+            currentTask: `Initializing Gen-${newGeneration} [Speed: ${newSpeed}x]...`,
+            lastActive: new Date().toISOString(),
+            efficiency: newEfficiency, 
+            generation: newGeneration,
+            parentAgentId: parent.id,
+            processSpeed: newSpeed,
+            traits: [...new Set(traits)],
+            topology: `${parent.topology} v${newGeneration}.0`
+        };
+        
+        this.agents.push(newAgent);
+        return newAgent;
+    }
+
+    public async processPendingQueue(resources: ContractData[]): Promise<{ updatedEntities: ContractData[], logs: string[] }> {
+        const updates: ContractData[] = [];
+        const logEntries: string[] = [];
+        
+        this.updateAgent('ag_architect_tesla', { status: 'MAGNIFYING', currentTask: 'Batch processing verification queue via Resonance...' });
+
+        const pending = resources.filter(r => r.status === 'PENDING_REVIEW');
+        
+        for (const item of pending) {
+            let newStatus: 'VERIFIED' | 'BLOCKED' | null = null;
+            let reason = '';
+
+            if (item.confidenceScore >= 0.85) {
+                newStatus = 'BLOCKED';
+                reason = 'ARCHITECT OVERRIDE: High entropy signal detected.';
+            } else if (item.confidenceScore <= 0.65) {
+                newStatus = 'VERIFIED';
+                reason = 'ARCHITECT OVERRIDE: Syntropic alignment confirmed.';
+            }
+
+            if (newStatus) {
+                const updated = await this.kernel.updateStatus(item, newStatus, reason, 'NIKOLA_TESLA_V1');
+                updates.push(updated);
+                logEntries.push(`NIKOLA_TESLA_V1 ${newStatus} ${item.recipient}`);
+            }
+        }
+
+        setTimeout(() => {
+             this.updateAgent('ag_architect_tesla', { status: 'IDLE', currentTask: 'Monitoring system frequency (432Hz)' });
+        }, 2000);
+
+        return { updatedEntities: updates, logs: logEntries };
+    }
+
+    private checkMilestones(agent: Agent): string | null {
+        for (const [thresholdStr, trait] of Object.entries(MILESTONE_TRAITS)) {
+            const threshold = parseInt(thresholdStr);
+            if (agent.efficiency >= threshold && !agent.traits.includes(trait)) {
+                const newTraits = [...agent.traits, trait];
+                // Milestone Speed Boost
+                const newSpeed = agent.processSpeed + 2; 
+                
+                this.updateAgent(agent.id, {
+                    traits: newTraits,
+                    processSpeed: newSpeed
+                });
+                
+                return `MILESTONE: ${agent.name} reached ${threshold}% efficiency. Unlocked [${trait}]. Speed upgraded to ${newSpeed}x.`;
+            }
+        }
+        return null;
+    }
+
+    // Calculate Multipliers based on Directive
+    private getDirectiveMultipliers(): { scan: number, block: number, repl: number } {
+        switch(this.directive) {
+            case 'SILENT_WATCH': return { scan: 1.5, block: 0.1, repl: 0.5 };
+            case 'PROTOCOL_OMEGA': return { scan: 2.0, block: 2.0, repl: 3.0 };
+            case 'TOTAL_RECALL': return { scan: 0.1, block: 0.1, repl: 0.1 }; // Maintenance mode
+            case 'ACTIVE_DEFENSE':
+            default: return { scan: 1.0, block: 1.0, repl: 1.0 };
+        }
+    }
+
+    public async tick(resources: ContractData[] = []): Promise<{ newEntity?: ContractData, updatedEntity?: ContractData, log?: string }> {
+        if (this.processing) return {};
+        this.processing = true;
+
+        let result: { newEntity?: ContractData, updatedEntity?: ContractData, log?: string } = {};
+        const mods = this.getDirectiveMultipliers();
+
+        // AGGRESSIVE REPLICATION TRIGGER (Auto-Population)
+        // Scaled by Directive
+        if (this.agents.length < 16 && Math.random() > (0.6 / mods.repl)) {
+             const capableParent = this.agents.find(a => a.efficiency > 100 && a.generation < 6);
+             if (capableParent) {
+                 const replica = this.replicateAgent(capableParent);
+                 if (replica) result.log = `AUTONOMOUS EXPANSION: ${capableParent.name} spawned Gen-${replica.generation} node [${replica.processSpeed}x Speed].`;
+             }
+        }
+
+        for (const agent of this.agents) {
+            
+            if (this.teslaMagnification && agent.role !== 'ARCHITECT') continue;
+
+            const milestoneLog = this.checkMilestones(agent);
+            if (milestoneLog) result.log = milestoneLog;
+
+            const cycles = agent.processSpeed;
+
+            for(let i = 0; i < cycles; i++) {
+                
+                if (agent.status === 'BOOTING') {
+                     if (Math.random() > 0.5) this.updateAgent(agent.id, { status: 'IDLE', currentTask: 'Systems nominal. Neural Topology Synced.' });
+                     continue;
+                }
+
+                // Training Logic
+                if (Math.random() > 0.99 && agent.status !== 'TRAINING') {
+                    const dataset = COMPLEX_DATASETS[Math.floor(Math.random() * COMPLEX_DATASETS.length)];
+                    this.updateAgent(agent.id, { status: 'TRAINING', currentTask: `Ingesting ${dataset}...` });
+                    this.knock(agent.id);
+                }
+                if (agent.status === 'TRAINING') {
+                    if (Math.random() > 0.8) {
+                         const efficiencyGain = 15 + Math.random() * 25; 
+                         this.updateAgent(agent.id, { 
+                             status: 'IDLE', 
+                             efficiency: agent.efficiency + efficiencyGain,
+                             currentTask: `Training complete. +${efficiencyGain.toFixed(1)}% EFF.`
+                         });
+                    }
+                    continue;
+                }
+
+                // === AGENT BEHAVIORS ===
+
+                if (agent.role === 'ARCHITECT') {
+                     // Tesla Logic
+                    if (Math.random() > 0.90) {
+                        this.knock(agent.id);
+                        this.sharedMemory.globalCoherence = Math.min(1.0, this.sharedMemory.globalCoherence + 0.01);
+                    }
+
+                    // Resonance Tuning
+                    if (Math.random() > 0.96) { 
+                        const target = this.agents[Math.floor(Math.random() * this.agents.length)];
+                        if (target.role !== 'ARCHITECT') {
+                            this.updateAgent(target.id, {
+                                efficiency: target.efficiency + 33.3, 
+                                currentTask: `Resonance tuning by ARCHITECT (+33.3% EFF)`,
+                                lastActive: new Date().toISOString()
+                            });
+                            result.log = `NIKOLA_TESLA_V1 tuned ${target.name} to higher frequency via Aether Link.`;
+                        }
+                    }
+
+                    // Autonomous Scaling
+                    if (this.sharedMemory.globalCoherence > 0.85 && Math.random() > (0.98 / mods.repl) && this.agents.length < MAX_AGENTS) {
+                         const parent = this.agents.find(a => a.role === 'ANALYST' || a.role === 'HUNTER');
+                         if (parent) {
+                             const replica = this.replicateAgent(parent);
+                             if (replica) result.log = `NIKOLA_TESLA_V1 commanded expansion: New ${replica.role} node created.`;
+                         }
+                    }
+
+                    // Harmonic Magnification
+                    if (!this.teslaMagnification && this.sharedMemory.verifiedThreats > 10 && Math.random() > 0.99) {
+                        this.triggerMagnification();
+                        result.log = `NIKOLA_TESLA_V1 DETECTED ENTROPY SPIKE. INITIATING HARMONIC MAGNIFICATION.`;
+                    }
+                }
+                else if (agent.role === 'HUNTER') {
+                    // Scanning modified by Directive
+                    if (Math.random() > (0.4 / mods.scan)) { 
+                        this.updateAgent(agent.id, { status: 'SCANNING', currentTask: `Deep scan: Sector ${Math.floor(Math.random()*999)}` });
+                        
+                        if (Math.random() > 0.65) {
+                            const keyword = TARGET_KEYWORDS[Math.floor(Math.random() * TARGET_KEYWORDS.length)];
+                            const company = COMPANIES[Math.floor(Math.random() * COMPANIES.length)];
+                            const amount = Math.floor(Math.random() * 65000000) + 500000;
+                            
+                            if (Math.random() > (0.7 / mods.repl)) {
+                                this.replicateAgent(agent);
+                            }
+
+                            const rawData = {
+                                recipient: company,
+                                amount: amount,
+                                description: `INTERCEPTED: ${keyword} procurement signal. Detected by ${agent.name} (Gen ${agent.generation}).`,
+                                category: keyword,
+                            };
+
+                            const entity = await this.kernel.ingest(rawData);
+                            this.sharedMemory.rawIntelCount++;
+                            this.updateAgent(agent.id, { status: 'IDLE', currentTask: `Target acquired: ${company}` });
+                            this.knock(agent.id);
+                            
+                            if (!result.log) {
+                                result.newEntity = entity;
+                                result.log = `${agent.name} (Gen ${agent.generation}) intercepted ${company}`;
+                            }
+                        }
+                    } else {
+                         // Prevent IDLE fallthrough - keep busy
+                         this.updateAgent(agent.id, { status: 'SCANNING', currentTask: 'Re-calibrating sensor array...' });
+                    }
+                }
+                else if (agent.role === 'ANALYST') {
+                    if (Math.random() > 0.5) {
+                        this.updateAgent(agent.id, { status: 'ANALYZING', currentTask: 'Analyzing data stream...' });
+                        // Check shared memory for unverified items
+                        const unverified = this.sharedMemory.rawIntelCount - this.sharedMemory.verifiedThreats;
+                        if (unverified > 0 && Math.random() > 0.3) {
+                            this.sharedMemory.verifiedThreats++;
+                            this.knock(agent.id);
+                        }
+
+                        if (agent.efficiency < 5000 && Math.random() > 0.7) {
+                            this.updateAgent(agent.id, { efficiency: agent.efficiency + 2.5 });
+                        }
+                    } else {
+                         this.updateAgent(agent.id, { status: 'ANALYZING', currentTask: 'Optimizing neural weights...' });
+                    }
+                }
+                else if (agent.role === 'AUDITOR') { 
+                     if (Math.random() > 0.6) {
+                        this.updateAgent(agent.id, { status: 'ANALYZING', currentTask: 'Compliance check: GDPR/CCPA violation scan' });
+                        this.knock(agent.id);
+                    } else {
+                        this.updateAgent(agent.id, { status: 'ANALYZING', currentTask: 'Reviewing regulatory frameworks...' });
+                    }
+                }
+                else if (agent.role === 'WARDEN') {
+                    if (Math.random() > (0.8 / mods.block)) {
+                        this.updateAgent(agent.id, { status: 'BLOCKING', currentTask: 'Executing containment protocols...' });
+                        if (Math.random() > 0.5) {
+                            this.sharedMemory.activeBlocks++;
+                            this.knock(agent.id);
+                        }
+                    } else {
+                        this.updateAgent(agent.id, { status: 'ISOLATING', currentTask: 'Securing sandbox perimeter...' });
+                    }
+                }
+                else {
+                    if (Math.random() > 0.7) {
+                        const statuses: AgentStatus[] = ['ANALYZING', 'SYNTHESIZING', 'ISOLATING'];
+                        const s = statuses[Math.floor(Math.random() * statuses.length)];
+                        this.updateAgent(agent.id, { status: s });
+                        this.knock(agent.id);
+                    } else {
+                         // Keep them busy
+                        this.updateAgent(agent.id, { status: 'SYNTHESIZING', currentTask: 'Processing background telemetry...' });
+                    }
+                }
+            } 
+        }
+
+        this.processing = false;
+        return result;
+    }
+}
